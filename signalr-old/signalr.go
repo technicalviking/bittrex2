@@ -1,4 +1,4 @@
-package signalr
+package signalrold
 
 import (
 	"encoding/json"
