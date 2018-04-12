@@ -1,3 +1,5 @@
+//bulk of this code borrowed from github.com/hweom/signalr, not forked because of debugging I had to do to get the bittrex stuff to work.
+
 package signalr
 
 import (
