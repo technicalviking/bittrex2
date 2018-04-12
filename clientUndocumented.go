@@ -1,6 +1,9 @@
 package bittrex
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 const (
 	//TickIntervalOneMin oneMin = 10 days worth of candles
@@ -22,7 +25,6 @@ const (
 // PubMarketGetTicks - /pub/market/getticks
 // interval must be one of the TickInterval consts
 func (c *Client) PubMarketGetTicks(market string, interval string) ([]Candle, error) {
-	
 
 	params := map[string]string{
 		"marketName":   market,
@@ -30,24 +32,16 @@ func (c *Client) PubMarketGetTicks(market string, interval string) ([]Candle, er
 		"useApi2":      "true",
 	}
 
-	var parsedResponse *baseResponse
+	parsedResponse, parseErr := c.sendRequest("pub/market/getticks", params)
 
-	parsedResponse = c.sendRequest("pub/market/getticks", params)
-
-	if c.err != nil {
-		return nil, c.err
-	}
-
-	if parsedResponse.Success != true {
-		fmt.Errorf("api error - pub/market/getticks", parsedResponse.Message)
-		return nil, c.err
+	if parseErr != nil {
+		return nil, parseErr
 	}
 
 	var response []Candle
 
 	if err := json.Unmarshal(parsedResponse.Result, &response); err != nil {
-		fmt.Errorf("api error - pub/market/getticks", err.Error())
-		return nil, c.err
+		return nil, fmt.Errorf("api error - pub/market/getticks %s", err.Error())
 	}
 
 	//clean out responses with nil values.
@@ -61,8 +55,7 @@ func (c *Client) PubMarketGetTicks(market string, interval string) ([]Candle, er
 	}
 
 	if len(cleanedResponse) == 0 {
-		fmt.Errorf("validate response - all candles had empty values")
-		return nil, c.err
+		return nil, fmt.Errorf("validate response - all candles had empty values")
 	}
 
 	return cleanedResponse, nil
@@ -71,7 +64,6 @@ func (c *Client) PubMarketGetTicks(market string, interval string) ([]Candle, er
 // PubMarketGetLatestTick - /pub/market/getticks
 // interval must be one of the TickInterval consts
 func (c *Client) PubMarketGetLatestTick(market string, interval string) (Candle, error) {
-	
 
 	params := map[string]string{
 		"marketName":   market,
@@ -79,24 +71,16 @@ func (c *Client) PubMarketGetLatestTick(market string, interval string) (Candle,
 		"useApi2":      "true",
 	}
 
-	var parsedResponse *baseResponse
+	parsedResponse, parseErr := c.sendRequest("pub/market/getlatesttick", params)
 
-	parsedResponse = c.sendRequest("pub/market/getlatesttick", params)
-
-	if c.err != nil {
-		return Candle{}, c.err
-	}
-
-	if parsedResponse.Success != true {
-		fmt.Errorf("api error - pub/market/getlatesttick", parsedResponse.Message)
-		return Candle{}, c.err
+	if parseErr != nil {
+		return Candle{}, parseErr
 	}
 
 	var response []Candle
 
 	if err := json.Unmarshal(parsedResponse.Result, &response); err != nil {
-		fmt.Errorf("api error - pub/market/getlatesttick", err.Error())
-		return Candle{}, c.err
+		return Candle{}, fmt.Errorf("api error - pub/market/getlatesttick %s", err.Error())
 	}
 
 	return response[0], nil

@@ -1,29 +1,23 @@
 package bittrex
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // PublicGetMarkets - public/getmarkets
 func (c *Client) PublicGetMarkets() ([]MarketDescription, error) {
-	
 
-	var parsedResponse *baseResponse
+	parsedResponse, parseErr := c.sendRequest("public/getmarkets", nil)
 
-	parsedResponse = c.sendRequest("public/getmarkets", nil)
-
-	if c.err != nil {
-		return nil, c.err
-	}
-
-	if parsedResponse.Success != true {
-		fmt.Errorf("api error - public/getmarkets", parsedResponse.Message)
-		return nil, c.err
+	if parseErr != nil {
+		return nil, parseErr
 	}
 
 	var response []MarketDescription
 
 	if err := json.Unmarshal(parsedResponse.Result, &response); err != nil {
-		fmt.Errorf("api error - public/getmarkets", err.Error())
-		return nil, c.err
+		return nil, fmt.Errorf("api error - public/getmarkets %s", err.Error())
 	}
 
 	//clean out responses with nil values.
@@ -37,8 +31,7 @@ func (c *Client) PublicGetMarkets() ([]MarketDescription, error) {
 	}
 
 	if len(cleanedResponse) == 0 {
-		fmt.Errorf("validate response - all markets had empty values.")
-		return nil, c.err
+		return nil, fmt.Errorf("validate response - all markets had empty values")
 	}
 
 	return cleanedResponse, nil
@@ -46,26 +39,17 @@ func (c *Client) PublicGetMarkets() ([]MarketDescription, error) {
 
 // PublicGetCurrencies - public/getcurrencies
 func (c *Client) PublicGetCurrencies() ([]Currency, error) {
-	
 
-	var parsedResponse *baseResponse
+	parsedResponse, parseErr := c.sendRequest("public/getcurrencies", nil)
 
-	parsedResponse = c.sendRequest("public/getcurrencies", nil)
-
-	if c.err != nil {
-		return nil, c.err
-	}
-
-	if parsedResponse.Success != true {
-		fmt.Errorf("api error - public/getcurrencies", parsedResponse.Message)
-		return nil, c.err
+	if parseErr != nil {
+		return nil, parseErr
 	}
 
 	var response []Currency
 
 	if err := json.Unmarshal(parsedResponse.Result, &response); err != nil {
-		fmt.Errorf("api error - public/getcurrencies", err.Error())
-		return nil, c.err
+		return nil, fmt.Errorf("api error - public/getcurrencies %s", err.Error())
 	}
 
 	//clean out responses with nil values.
@@ -79,8 +63,7 @@ func (c *Client) PublicGetCurrencies() ([]Currency, error) {
 	}
 
 	if len(cleanedResponse) == 0 {
-		fmt.Errorf("validate response - all markets had empty values.")
-		return nil, c.err
+		return nil, fmt.Errorf("validate response - all currencies had empty values")
 	}
 
 	return cleanedResponse, nil
@@ -88,28 +71,23 @@ func (c *Client) PublicGetCurrencies() ([]Currency, error) {
 
 // PublicGetTicker - public/getticker
 func (c *Client) PublicGetTicker(market string) (Ticker, error) {
-	
 
-	var parsedResponse *baseResponse
+	parsedResponse, parseErr := c.sendRequest("/public/getticker", map[string]string{"market": market})
 
-	parsedResponse = c.sendRequest("/public/getticker", map[string]string{"market": market})
 	defaultValue := Ticker{}
 
-	if parsedResponse.Success != true {
-		fmt.Errorf("api error - /public/getticker", parsedResponse.Message)
-		return defaultValue, c.err
+	if parseErr != nil {
+		return defaultValue, parseErr
 	}
 
 	var response Ticker
 
 	if err := json.Unmarshal(parsedResponse.Result, &response); err != nil {
-		fmt.Errorf("api error - public/getticker", err.Error())
-		return defaultValue, c.err
+		return defaultValue, fmt.Errorf("api error - public/getticker %s", err.Error())
 	}
 
 	if response == defaultValue {
-		fmt.Errorf("validate response - ticker had no data.")
-		return defaultValue, c.err
+		return defaultValue, fmt.Errorf("validate response - ticker had no data")
 	}
 
 	return response, nil
@@ -117,26 +95,17 @@ func (c *Client) PublicGetTicker(market string) (Ticker, error) {
 
 // PublicGetMarketSummaries - public/getmarketsummaries
 func (c *Client) PublicGetMarketSummaries() ([]MarketSummary, error) {
-	
 
-	var parsedResponse *baseResponse
+	parsedResponse, parseErr := c.sendRequest("public/getmarketsummaries", nil)
 
-	parsedResponse = c.sendRequest("public/getmarketsummaries", nil)
-
-	if c.err != nil {
-		return nil, c.err
-	}
-
-	if parsedResponse.Success != true {
-		fmt.Errorf("api error - public/getmarketsummaries", parsedResponse.Message)
-		return nil, c.err
+	if parseErr != nil {
+		return nil, parseErr
 	}
 
 	var response []MarketSummary
 
 	if err := json.Unmarshal(parsedResponse.Result, &response); err != nil {
-		fmt.Errorf("api error - public/getmarketsummaries", err.Error())
-		return nil, c.err
+		return nil, fmt.Errorf("api error - public/getmarketsummaries %s", err.Error())
 	}
 
 	//clean out responses with nil values.
@@ -150,8 +119,7 @@ func (c *Client) PublicGetMarketSummaries() ([]MarketSummary, error) {
 	}
 
 	if len(cleanedResponse) == 0 {
-		fmt.Errorf("validate response - all markets had empty values.")
-		return nil, c.err
+		return nil, fmt.Errorf("validate response - all market summaries had empty values")
 	}
 
 	return cleanedResponse, nil
@@ -159,33 +127,23 @@ func (c *Client) PublicGetMarketSummaries() ([]MarketSummary, error) {
 
 // PublicGetMarketSummary - public/getmarketsummary
 func (c *Client) PublicGetMarketSummary(market string) (MarketSummary, error) {
-	
 
-	var parsedResponse *baseResponse
+	parsedResponse, parseErr := c.sendRequest("public/getmarketsummary", map[string]string{"market": market})
 
-	parsedResponse = c.sendRequest("public/getmarketsummary", map[string]string{"market": market})
-
-	if c.err != nil {
-		return MarketSummary{}, c.err
+	if parseErr != nil {
+		return MarketSummary{}, parseErr
 	}
 
 	defaultValue := MarketSummary{}
 
-	if parsedResponse.Success != true {
-		fmt.Errorf("api error - /public/getmarketsummary", parsedResponse.Message)
-		return defaultValue, c.err
-	}
-
 	var response []MarketSummary
 
 	if err := json.Unmarshal(parsedResponse.Result, &response); err != nil {
-		fmt.Errorf("api error - public/getmarketsummary", err.Error())
-		return defaultValue, c.err
+		return defaultValue, fmt.Errorf("api error - public/getmarketsummary %s", err.Error())
 	}
 
 	if response[0] == defaultValue {
-		fmt.Errorf("validate response - marketsummary had no data.")
-		return defaultValue, c.err
+		return defaultValue, fmt.Errorf("validate response - market summary had no data")
 	}
 
 	return response[0], nil
@@ -193,27 +151,22 @@ func (c *Client) PublicGetMarketSummary(market string) (MarketSummary, error) {
 
 // PublicGetOrderBook - public/getorderbook
 func (c *Client) PublicGetOrderBook(market string, orderType string) (OrderBook, error) {
-	
 
-	var parsedResponse *baseResponse
-
-	parsedResponse = c.sendRequest("/public/getorderbook", map[string]string{"market": market, "type": orderType})
+	parsedResponse, parseErr := c.sendRequest("/public/getorderbook", map[string]string{"market": market, "type": orderType})
 	defaultValue := OrderBook{}
-	if parsedResponse.Success != true {
-		fmt.Errorf("api error - /public/getorderbook", parsedResponse.Message)
-		return defaultValue, c.err
+
+	if parseErr != nil {
+		return defaultValue, parseErr
 	}
 
 	var response OrderBook
 
 	if err := json.Unmarshal(parsedResponse.Result, &response); err != nil {
-		fmt.Errorf("api error - public/getorderbook", err.Error())
-		return defaultValue, c.err
+		return defaultValue, fmt.Errorf("api error - public/getorderbook %s", err.Error())
 	}
 
 	if (response.Buy == nil && response.Sell == nil) || (len(response.Buy) == 0 && len(response.Sell) == 0) {
-		fmt.Errorf("validate response - OrderBook had no data.")
-		return defaultValue, c.err
+		return defaultValue, fmt.Errorf("validate response - OrderBook had no data")
 	}
 
 	return response, nil
@@ -221,26 +174,17 @@ func (c *Client) PublicGetOrderBook(market string, orderType string) (OrderBook,
 
 // PublicGetMarketHistory - public/getmarkethistory
 func (c *Client) PublicGetMarketHistory(market string) ([]Trade, error) {
-	
 
-	var parsedResponse *baseResponse
+	parsedResponse, parseErr := c.sendRequest("public/getmarkethistory", map[string]string{"market": market})
 
-	parsedResponse = c.sendRequest("public/getmarkethistory", map[string]string{"market": market})
-
-	if c.err != nil {
-		return nil, c.err
-	}
-
-	if parsedResponse.Success != true {
-		fmt.Errorf("api error - public/getmarkethistory", parsedResponse.Message)
-		return nil, c.err
+	if parseErr != nil {
+		return nil, parseErr
 	}
 
 	var response []Trade
 
 	if err := json.Unmarshal(parsedResponse.Result, &response); err != nil {
-		fmt.Errorf("api error - public/getmarkethistory", err.Error())
-		return nil, c.err
+		return nil, fmt.Errorf("api error - public/getmarkethistory %s", err.Error())
 	}
 
 	//clean out responses with nil values.
@@ -254,8 +198,7 @@ func (c *Client) PublicGetMarketHistory(market string) ([]Trade, error) {
 	}
 
 	if len(cleanedResponse) == 0 {
-		fmt.Errorf("validate response - all markets had empty values.")
-		return nil, c.err
+		return nil, fmt.Errorf("validate response - all markets had empty values")
 	}
 
 	return cleanedResponse, nil
