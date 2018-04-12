@@ -3,12 +3,12 @@ package bittrex
 import "github.com/technicalviking/bittrex2/bittrex/socketPayloads"
 
 //SubscribeToMarketSummary retrieve a filtered list of market summary deltas by market name.
-func (c *Client) SubscribeToMarketSummary(market string) chan socketPayloads.SummaryDelta {
+func (c *Client) SubscribeToMarketSummary(market string) chan socketPayloads.Summary {
 	c.summaryDeltaMutex.Lock()
 	defer c.summaryDeltaMutex.Unlock()
 
 	if c.summaryDeltaSubscriptions == nil {
-		c.summaryDeltaSubscriptions = make(map[string]chan socketPayloads.SummaryDelta)
+		c.summaryDeltaSubscriptions = make(map[string]chan socketPayloads.Summary)
 		c.socketClient.CallHub(websocketHub, "SubscribeToSummaryDeltas")
 	}
 
@@ -16,7 +16,7 @@ func (c *Client) SubscribeToMarketSummary(market string) chan socketPayloads.Sum
 		return c.summaryDeltaSubscriptions[market]
 	}
 
-	c.summaryDeltaSubscriptions[market] = make(chan socketPayloads.SummaryDelta)
+	c.summaryDeltaSubscriptions[market] = make(chan socketPayloads.Summary)
 
 	return c.summaryDeltaSubscriptions[market]
 }
@@ -58,5 +58,4 @@ func (c *Client) SubscribeToExchange(market string) chan socketPayloads.Exchange
 	c.exchangeDeltaSubscriptions[market] = make(chan socketPayloads.ExchangeDelta)
 
 	return c.exchangeDeltaSubscriptions[market]
-
 }

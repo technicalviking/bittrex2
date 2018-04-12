@@ -7,6 +7,7 @@ import (
 
 //creating type aliases to be used internally here.
 type guid = string
+type long = int64
 
 /*
 bittrex describes decimal values as "string encoded decimals", but the json body does not actually wrap the values in quotes.

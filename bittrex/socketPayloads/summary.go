@@ -1,7 +1,7 @@
 package socketPayloads
 
-//SummaryDelta Element of the "Deltas" array within the Summary struct
-type SummaryDelta struct {
+//Summary Element of the "Deltas" array within the SummaryDeltaResponse struct or "Summaries" array within SummaryQueryResponses
+type Summary struct {
 	MarketName     string  `json:"M"`
 	High           decimal `json:"H"`
 	Low            decimal `json:"L"`
@@ -17,8 +17,14 @@ type SummaryDelta struct {
 	Created        date    `json:"x"`
 }
 
-//Summary response payload for "SubscribeToSummaryDeltas"
-type Summary struct {
-	Nonce  int            `json:"N"`
-	Deltas []SummaryDelta `json:"D"`
+//SummaryDeltaResponse response payload for "SubscribeToSummaryDeltas"
+type SummaryDeltaResponse struct {
+	Nonce  int       `json:"N"`
+	Deltas []Summary `json:"D"`
+}
+
+//SummaryQueryResponse response payload for "QuerySummaryState"
+type SummaryQueryResponse struct {
+	Nonce     int       `json:"N"`
+	Summaries []Summary `json:"s"`
 }

@@ -7,29 +7,58 @@ const (
 	Add = operationType(iota)
 	Remove
 	Update
+	Cancel
 )
 
 //ExchangeOrder values describing an order in the order book.
 type ExchangeOrder struct {
-	Type     operationType
-	Rate     decimal
-	Quantity decimal
+	Type     operationType `json:"TY"`
+	Rate     decimal       `json:"R"`
+	Quantity decimal       `json:"Q"`
 }
 
 //ExchangeFill values describing fill operations for an order book.
 type ExchangeFill struct {
-	FillID    int
-	OrderType string
-	Rate      decimal
-	Quantity  decimal
-	TimeStamp date
+	FillID    int     `json:"FI"`
+	OrderType string  `json:"OT"`
+	Rate      decimal `json:"R"`
+	Quantity  decimal `json:"Q"`
+	TimeStamp date    `json:"T"`
 }
 
 //ExchangeDelta payload for the "SubscribeToExchangeDeltas" response
 type ExchangeDelta struct {
-	MarketName string
-	Nonce      int
-	Buys       []ExchangeOrder
-	Sells      []ExchangeOrder
-	Fills      []ExchangeFill
+	MarketName string          `json:"M"`
+	Nonce      int             `json:"N"`
+	Buys       []ExchangeOrder `json:"Z"`
+	Sells      []ExchangeOrder `json:"S"`
+	Fills      []ExchangeFill  `json:"f"`
+}
+
+//////////////////////////////////////////////
+
+//ExchangeStateOrder Buy or Sell struct within ExchangeState
+type ExchangeStateOrder struct {
+	Quantity decimal `json:"Q"`
+	Rate     decimal `json:"R"`
+}
+
+//ExchangeStateFill Describes a filled order (?) within the ExchangeState
+type ExchangeStateFill struct {
+	ID        int     `json:"I"`
+	TimeStamp date    `json:"T"`
+	Quantity  decimal `json:"Q"`
+	Price     decimal `json:"P"`
+	Total     decimal `json:"t"`
+	FillType  string  `json:"F"`
+	OrderType string  `json:"OT"`
+}
+
+//ExchangeState response payload for use with "QueryExchangeState"
+type ExchangeState struct {
+	MarketName string               `json:"M"`
+	Nonce      int                  `json:"N"`
+	Buys       []ExchangeStateOrder `json:"Z"`
+	Sells      []ExchangeStateOrder `json:"S"`
+	Fills      []ExchangeStateFill  `json:"f"`
 }

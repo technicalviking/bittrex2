@@ -18,8 +18,11 @@ type Client struct {
 	timeout      time.Duration
 	socketClient *signalr.Client
 
+	orderSubscription   chan socketPayloads.OrderResponse
+	balanceSubscription chan socketPayloads.Balance
+
 	summaryDeltaMutex         sync.Mutex
-	summaryDeltaSubscriptions map[string]chan socketPayloads.SummaryDelta
+	summaryDeltaSubscriptions map[string]chan socketPayloads.Summary
 
 	exchangeDeltaMutex         sync.Mutex
 	exchangeDeltaSubscriptions map[string]chan socketPayloads.ExchangeDelta
@@ -96,6 +99,9 @@ func (c *Client) addListeners() {
 	}
 
 	c.socketClient.OnClientMethod = c.socketOnClientMethod
+
+	c.orderSubscription = make(chan socketPayloads.OrderResponse)
+	c.balanceSubscription = make(chan socketPayloads.Balance)
 }
 
 func (c *Client) socketOnClientMethod(hub, method string, arguments []json.RawMessage) {
@@ -114,7 +120,7 @@ func (c *Client) socketOnClientMethod(hub, method string, arguments []json.RawMe
 		case eventBalanceDelta:
 			c.pipeBalanceDelta(decodedArg)
 		case eventMarketDelta:
-			c.pipeMarketDelta(decodedArg)
+			c.pipeMarketExchangeDelta(decodedArg)
 		case eventSummaryDelta:
 			c.pipeEventSummaryDelta(decodedArg)
 		case eventSummaryDeltaLite:
