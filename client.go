@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/technicalviking/bittrex2/bittrex/socketPayloads"
 	"github.com/technicalviking/bittrex2/signalr"
+	"github.com/technicalviking/bittrex2/socketPayloads"
 )
 
 //Client object representing connection to bittrex api.

@@ -1,6 +1,6 @@
 package bittrex
 
-import "github.com/technicalviking/bittrex2/bittrex/socketPayloads"
+import "github.com/technicalviking/bittrex2/socketPayloads"
 
 //SubscribeToMarketSummary retrieve a filtered list of market summary deltas by market name.
 func (c *Client) SubscribeToMarketSummary(market string) chan socketPayloads.Summary {

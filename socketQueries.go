@@ -3,7 +3,7 @@ package bittrex
 import (
 	"encoding/json"
 
-	"github.com/technicalviking/bittrex2/bittrex/socketPayloads"
+	"github.com/technicalviking/bittrex2/socketPayloads"
 )
 
 //QueryExchangeState https://github.com/Bittrex/beta#queryexchangestate
