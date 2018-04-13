@@ -43,6 +43,12 @@ func New(key string, secret string) (*Client, error) {
 		return nil, newClientErr
 	}
 
+	if key != "" && secret != "" {
+		if authenticateErr := newClient.authNewSignalClient(); authenticateErr != nil {
+			return nil, authenticateErr
+		}
+	}
+
 	newClient.addListeners()
 
 	return newClient, nil
@@ -57,8 +63,15 @@ func (c *Client) connectNewSignalClient() error {
 		return fmt.Errorf("Unable to create bittrex client: %+v", connectErr)
 	}
 
+	c.socketClient = client
+
+	return nil
+}
+
+//authNewSignalClient authenticate client to retrieve balance and order notifications
+func (c *Client) authNewSignalClient() error {
 	//authenticate the client.
-	authContext, authErr := client.CallHub(websocketHub, "GetAuthContext", c.apiKey)
+	authContext, authErr := c.socketClient.CallHub(websocketHub, "GetAuthContext", c.apiKey)
 
 	if authErr != nil {
 		return fmt.Errorf("Unable to authenticate bittrex client: %+v", authErr)
@@ -69,7 +82,7 @@ func (c *Client) connectNewSignalClient() error {
 
 	signedChallenge := c.sign(parsedAuthContext)
 
-	challengeResp, challengeErr := client.CallHub(websocketHub, "Authenticate", c.apiKey, signedChallenge)
+	challengeResp, challengeErr := c.socketClient.CallHub(websocketHub, "Authenticate", c.apiKey, signedChallenge)
 
 	if challengeErr != nil {
 		return fmt.Errorf("Signed challenge not accepted: %+v", challengeErr)
@@ -86,9 +99,7 @@ func (c *Client) connectNewSignalClient() error {
 	if challengeOK == false {
 		return fmt.Errorf("Signed challenge not accepted, no error")
 	}
-
-	c.socketClient = client
-
+	
 	return nil
 }
 
