@@ -48,7 +48,7 @@ func (c *Client) sendRequest(endpoint string, params queryParams) (*baseResponse
 			return nil, e
 		}
 	case <-clientTimer.C:
-		return nil, fmt.Errorf("sendRequest - do request",
+		return nil, fmt.Errorf("sendRequest - do request %s",
 			fmt.Sprintf(
 				"BittrexAPI request timeout at %d seconds",
 				c.timeout/time.Second,
@@ -74,7 +74,7 @@ func (c *Client) sendRequest(endpoint string, params queryParams) (*baseResponse
 			Result:  rawBody,
 		}
 	} else if parseBaseResponseErr := json.Unmarshal(rawBody, &response); parseBaseResponseErr != nil {
-		return nil, fmt.Errorf("parseBaseResponseErr %+v", parseBaseResponseErr.Error())
+		return nil, fmt.Errorf("parseBaseResponseErr for endpoint %s, %+v", endpoint, parseBaseResponseErr.Error())
 	}
 
 	if response.Success == false {
