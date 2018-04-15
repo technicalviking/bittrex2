@@ -135,7 +135,7 @@ func (c *Client) AccountWithdraw(currency string, quantity decimal, address stri
 	}
 
 	if response == defaultVal {
-		fmt.Errorf("validate response nil vals in withdraw response")
+		return defaultVal, fmt.Errorf("validate response nil vals in withdraw response")
 	}
 
 	return response, nil

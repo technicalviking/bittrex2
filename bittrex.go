@@ -2,8 +2,8 @@ package bittrex
 
 const (
 	baseURL          string = "https://bittrex.com"
-	v1APIURL         string = baseURL + "/v1.1"
-	v2APIURL         string = baseURL + "/v2.0"
+	v1APIURL         string = baseURL + "/api/v1.1"
+	v2APIURL         string = baseURL + "/api/v2.0"
 	websocketBaseURI string = "https://beta.bittrex.com"
 	websocketHub     string = "c2" //SignalR main hub
 	defaultTimeout   int64  = 30

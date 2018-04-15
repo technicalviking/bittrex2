@@ -25,7 +25,7 @@ func (bt *Timestamp) UnmarshalJSON(raw []byte) error {
 
 	var parseErr error
 	var parsedTime time.Time
-	if parsedTime, parseErr = time.Parse("2006-01-02T03:04:05", strTimestamp); parseErr != nil {
+	if parsedTime, parseErr = time.Parse("2006-01-02T15:04:05", strTimestamp); parseErr != nil {
 		return parseErr
 	}
 
