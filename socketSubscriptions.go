@@ -116,3 +116,13 @@ func (c *Client) setExchangeDeltaChan(market string, newChan chan socketPayloads
 	c.exchangeDeltaSubscriptions[market] = newChan
 	c.exchangeDeltaMutex.Unlock()
 }
+
+//SubscribeToBalanceChanges allow the consuming application access to the channel used to receive balance changes.
+func (c *Client) SubscribeToBalanceChanges() chan socketPayloads.BalanceDelta {
+	return c.balanceSubscription
+}
+
+//SubscribeToOrderChanges allow the consuming application access to the channel used to receive order changes.
+func (c *Client) SubscribeToOrderChanges() chan socketPayloads.OrderResponse {
+	return c.orderSubscription
+}

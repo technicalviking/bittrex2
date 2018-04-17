@@ -19,7 +19,7 @@ type Client struct {
 	socketClient *signalr.Client
 
 	orderSubscription   chan socketPayloads.OrderResponse
-	balanceSubscription chan socketPayloads.Balance
+	balanceSubscription chan socketPayloads.BalanceDelta
 
 	summaryDeltaMutex         sync.RWMutex
 	summaryDeltaSubscriptions map[string]chan socketPayloads.Summary
@@ -40,7 +40,7 @@ func New(key string, secret string) (*Client, error) {
 		apiSecret:                     secret,
 		timeout:                       time.Duration(defaultTimeout) * time.Second,
 		orderSubscription:             make(chan socketPayloads.OrderResponse),
-		balanceSubscription:           make(chan socketPayloads.Balance),
+		balanceSubscription:           make(chan socketPayloads.BalanceDelta),
 		summaryDeltaSubscriptions:     make(map[string]chan socketPayloads.Summary),
 		summaryLiteDeltaSubscriptions: make(map[string]chan socketPayloads.SummaryLiteDelta),
 		exchangeDeltaSubscriptions:    make(map[string]chan socketPayloads.ExchangeDelta),
@@ -120,10 +120,10 @@ func (c *Client) addListeners() {
 		fmt.Println("ERROR OCCURRED: ", err)
 	}
 
-	c.socketClient.OnClientMethod = c.socketOnClientMethod
-
 	c.orderSubscription = make(chan socketPayloads.OrderResponse)
-	c.balanceSubscription = make(chan socketPayloads.Balance)
+	c.balanceSubscription = make(chan socketPayloads.BalanceDelta)
+
+	c.socketClient.OnClientMethod = c.socketOnClientMethod
 }
 
 func (c *Client) socketOnClientMethod(hub, method string, arguments []json.RawMessage) {

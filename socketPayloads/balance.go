@@ -1,7 +1,7 @@
 package socketPayloads
 
 //Delta balance for a given currency
-type Delta struct {
+type BalanceDelta struct {
 	UUID          guid    `json:"U"`
 	AccountID     int     `json:"W"`
 	Currency      string  `json:"c"`
@@ -16,6 +16,6 @@ type Delta struct {
 
 //Balance response body for balance delta events (uB)
 type Balance struct {
-	Nonce int `json:"N"`
-	Delta `json:"d"`
+	Nonce        int `json:"N"`
+	BalanceDelta `json:"d"`
 }

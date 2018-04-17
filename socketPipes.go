@@ -27,7 +27,7 @@ func (c *Client) pipeBalanceDelta(args json.RawMessage) {
 		panic(parseErr)
 	}
 
-	c.balanceSubscription <- balance
+	c.balanceSubscription <- balance.BalanceDelta
 }
 
 func (c *Client) pipeMarketExchangeDelta(args json.RawMessage) {
