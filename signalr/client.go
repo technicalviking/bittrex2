@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/technicalviking/bittrex2/cloudflare"
 )
 
 type negotiationResponse struct {
@@ -43,6 +45,9 @@ type Client struct {
 	responseFutures map[string]chan *serverMessage
 	mutex           sync.Mutex
 	dispatchRunning bool
+
+	//setting a persisting http client to allow for the usage of cloudflare scraper.
+	client *http.Client
 }
 
 type serverMessage struct {
@@ -74,7 +79,13 @@ func (sc *Client) connectWebsocket(address string, params negotiationResponse, h
 	var connectionURL = url.URL{Scheme: "wss", Host: address, Path: "signalr/connect"}
 	connectionURL.RawQuery = connectionParameters.Encode()
 
-	if conn, _, err := websocket.DefaultDialer.Dial(connectionURL.String(), sc.RequestHeader); err != nil {
+	socketDialer := &websocket.Dialer{
+		Proxy:            http.ProxyFromEnvironment,
+		HandshakeTimeout: 45 * time.Second,
+		Jar:              sc.client.Jar,
+	}
+
+	if conn, _, err := socketDialer.Dial(connectionURL.String(), sc.RequestHeader); err != nil {
 		return nil, err
 	} else {
 		return conn, nil
@@ -85,8 +96,6 @@ func (sc *Client) negotiate(scheme, address string) (negotiationResponse, error)
 	var response negotiationResponse
 
 	var negotiationURL = url.URL{Scheme: scheme, Host: address, Path: "/signalr/negotiate"}
-
-	client := &http.Client{}
 
 	request, err := http.NewRequest("GET", negotiationURL.String(), nil)
 
@@ -100,7 +109,7 @@ func (sc *Client) negotiate(scheme, address string) (negotiationResponse, error)
 		}
 	}
 
-	reply, err := client.Do(request)
+	reply, err := sc.client.Do(request)
 	if err != nil {
 		return response, err
 	}
@@ -218,21 +227,32 @@ func (sc *Client) dispatch(connectedChannel chan bool) {
 	}
 }
 
-//CallHub Call server hub method. Dispatch() function must be running, otherwise this method will never return.
-func (sc *Client) CallHub(hub, method string, params ...interface{}) (json.RawMessage, error) {
-	var request = struct {
-		Hub        string        `json:"H"`
-		Method     string        `json:"M"`
-		Arguments  []interface{} `json:"A"`
-		Identifier int           `json:"I"`
-	}{
+type callHubRequest struct {
+	Hub        string        `json:"H"`
+	Method     string        `json:"M"`
+	Arguments  []interface{} `json:"A"`
+	Identifier int           `json:"I"`
+}
+
+var callHubIDMutex sync.Mutex
+
+func (sc *Client) newCallHubRequest(hub, method string, params []interface{}) callHubRequest {
+	callHubIDMutex.Lock()
+	requestID := sc.nextID
+	sc.nextID++
+	callHubIDMutex.Unlock()
+
+	return callHubRequest{
 		Hub:        hub,
 		Method:     method,
 		Arguments:  params,
-		Identifier: sc.nextID,
+		Identifier: requestID,
 	}
+}
 
-	sc.nextID++
+//CallHub Call server hub method. Dispatch() function must be running, otherwise this method will never return.
+func (sc *Client) CallHub(hub, method string, params ...interface{}) (json.RawMessage, error) {
+	request := sc.newCallHubRequest(hub, method, params)
 
 	data, err := json.Marshal(request)
 	if err != nil {
@@ -254,6 +274,7 @@ func (sc *Client) CallHub(hub, method string, params ...interface{}) (json.RawMe
 	if response, ok := <-responseChannel; !ok {
 		return nil, fmt.Errorf("Call to server returned no result")
 	} else if len(response.Error) > 0 {
+		fmt.Printf(" error found: %+v, %+v", request, response)
 		return nil, fmt.Errorf("%s", response.Error)
 	} else {
 		return response.Result, nil
@@ -294,10 +315,19 @@ func (sc *Client) Close() {
 }
 
 //New constructor for SignalR connection client.
-func New() *Client {
+func New() (*Client, error) {
+
+	scraper, err := cloudflare.NewTransport(http.DefaultTransport)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{Transport: scraper}
+
 	return &Client{
 		RequestHeader:   http.Header{},
 		nextID:          1,
 		responseFutures: make(map[string]chan *serverMessage),
-	}
+		client:          client,
+	}, nil
 }

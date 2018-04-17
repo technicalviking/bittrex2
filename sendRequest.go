@@ -102,7 +102,7 @@ func (c *Client) getFullURI(endpoint string, params queryParams) string {
 	query.Set("apikey", c.apiKey)
 
 	//prevent 304 responses.
-	query.Set("_", fmt.Sprintf("%d", time.Now().Unix()))
+	query.Set("_", fmt.Sprintf("%d", time.Now().Unix()*1000))
 
 	for param, value := range params {
 		query.Set(param, value)

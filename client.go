@@ -21,22 +21,29 @@ type Client struct {
 	orderSubscription   chan socketPayloads.OrderResponse
 	balanceSubscription chan socketPayloads.Balance
 
-	summaryDeltaMutex         sync.Mutex
+	summaryDeltaMutex         sync.RWMutex
 	summaryDeltaSubscriptions map[string]chan socketPayloads.Summary
+	isSubbedToSummaryDelta    bool
 
-	exchangeDeltaMutex         sync.Mutex
+	exchangeDeltaMutex         sync.RWMutex
 	exchangeDeltaSubscriptions map[string]chan socketPayloads.ExchangeDelta
 
-	summaryLiteDeltaMutex         sync.Mutex
+	summaryLiteDeltaMutex         sync.RWMutex
 	summaryLiteDeltaSubscriptions map[string]chan socketPayloads.SummaryLiteDelta
+	isSubbedToSummaryLiteDelta    bool
 }
 
 //New construct a new Client object representing an interface to the various bittrex APIs.
 func New(key string, secret string) (*Client, error) {
 	newClient := &Client{
-		apiKey:    key,
-		apiSecret: secret,
-		timeout:   time.Duration(defaultTimeout) * time.Second,
+		apiKey:                        key,
+		apiSecret:                     secret,
+		timeout:                       time.Duration(defaultTimeout) * time.Second,
+		orderSubscription:             make(chan socketPayloads.OrderResponse),
+		balanceSubscription:           make(chan socketPayloads.Balance),
+		summaryDeltaSubscriptions:     make(map[string]chan socketPayloads.Summary),
+		summaryLiteDeltaSubscriptions: make(map[string]chan socketPayloads.SummaryLiteDelta),
+		exchangeDeltaSubscriptions:    make(map[string]chan socketPayloads.ExchangeDelta),
 	}
 
 	if newClientErr := newClient.connectNewSignalClient(); newClientErr != nil {
@@ -55,12 +62,16 @@ func New(key string, secret string) (*Client, error) {
 }
 
 func (c *Client) connectNewSignalClient() error {
-	client := signalr.New()
+	client, clientErr := signalr.New()
+
+	if clientErr != nil {
+		return clientErr
+	}
 
 	socketURL, _ := url.Parse(websocketBaseURI)
 
 	if connectErr := client.Connect(socketURL.Scheme, socketURL.Host, []string{websocketHub}); connectErr != nil {
-		return fmt.Errorf("Unable to create bittrex client: %+v", connectErr)
+		return fmt.Errorf("Unable to create bittrex signal client at url %s:  %+v", websocketBaseURI, connectErr)
 	}
 
 	c.socketClient = client
@@ -99,7 +110,7 @@ func (c *Client) authNewSignalClient() error {
 	if challengeOK == false {
 		return fmt.Errorf("Signed challenge not accepted, no error")
 	}
-	
+
 	return nil
 }
 
