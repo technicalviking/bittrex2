@@ -234,7 +234,10 @@ type callHubRequest struct {
 	Identifier int           `json:"I"`
 }
 
-var callHubIDMutex sync.Mutex
+var (
+	callHubIDMutex sync.Mutex
+	callHubMutex   sync.Mutex
+)
 
 func (sc *Client) newCallHubRequest(hub, method string, params []interface{}) callHubRequest {
 	callHubIDMutex.Lock()
@@ -265,9 +268,11 @@ func (sc *Client) CallHub(hub, method string, params ...interface{}) (json.RawMe
 		return nil, err
 	}
 
+	callHubMutex.Lock()
 	if err := sc.socket.WriteMessage(websocket.TextMessage, data); err != nil {
 		return nil, err
 	}
+	callHubMutex.Unlock()
 
 	defer sc.deleteResponseFuture(responseKey)
 
