@@ -39,8 +39,6 @@ func New(key string, secret string) (*Client, error) {
 		apiKey:                        key,
 		apiSecret:                     secret,
 		timeout:                       time.Duration(defaultTimeout) * time.Second,
-		orderSubscription:             make(chan socketPayloads.OrderResponse),
-		balanceSubscription:           make(chan socketPayloads.BalanceDelta),
 		summaryDeltaSubscriptions:     make(map[string]chan socketPayloads.Summary),
 		summaryLiteDeltaSubscriptions: make(map[string]chan socketPayloads.SummaryLiteDelta),
 		exchangeDeltaSubscriptions:    make(map[string]chan socketPayloads.ExchangeDelta),
@@ -119,9 +117,6 @@ func (c *Client) addListeners() {
 	c.socketClient.OnMessageError = func(err error) {
 		fmt.Println("ERROR OCCURRED: ", err)
 	}
-
-	c.orderSubscription = make(chan socketPayloads.OrderResponse)
-	c.balanceSubscription = make(chan socketPayloads.BalanceDelta)
 
 	c.socketClient.OnClientMethod = c.socketOnClientMethod
 }

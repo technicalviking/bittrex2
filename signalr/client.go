@@ -85,11 +85,13 @@ func (sc *Client) connectWebsocket(address string, params negotiationResponse, h
 		Jar:              sc.client.Jar,
 	}
 
-	if conn, _, err := socketDialer.Dial(connectionURL.String(), sc.RequestHeader); err != nil {
+	conn, _, err := socketDialer.Dial(connectionURL.String(), sc.RequestHeader)
+
+	if err != nil {
 		return nil, err
-	} else {
-		return conn, nil
 	}
+
+	return conn, nil
 }
 
 func (sc *Client) negotiate(scheme, address string) (negotiationResponse, error) {
@@ -215,11 +217,19 @@ func (sc *Client) dispatch(connectedChannel chan bool) {
 			if len(message.Identifier) > 0 {
 				// This is a response to a hub call.
 				sc.routeResponse(&message)
-			} else if len(message.Data) == 1 {
-				if err := json.Unmarshal(message.Data[0], &hubCall); err == nil && len(hubCall.HubName) > 0 && len(hubCall.Method) > 0 {
-					// This is a client Hub method call from server.
-					if sc.OnClientMethod != nil {
-						sc.OnClientMethod(hubCall.HubName, hubCall.Method, hubCall.Arguments)
+			} else if len(message.Data) > 0 {
+				for _, curData := range message.Data {
+					err := json.Unmarshal(curData, &hubCall)
+
+					if err != nil {
+						panic(err)
+					}
+
+					if len(hubCall.HubName) > 0 && len(hubCall.Method) > 0 {
+						// This is a client Hub method call from server.
+						if sc.OnClientMethod != nil {
+							sc.OnClientMethod(hubCall.HubName, hubCall.Method, hubCall.Arguments)
+						}
 					}
 				}
 			}

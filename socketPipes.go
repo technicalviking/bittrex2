@@ -15,7 +15,9 @@ func (c *Client) pipeEventOrderDelta(args json.RawMessage) {
 		panic(parseErr)
 	}
 
-	c.orderSubscription <- order
+	if c.orderSubscription != nil {
+		c.orderSubscription <- order
+	}
 }
 
 func (c *Client) pipeBalanceDelta(args json.RawMessage) {
@@ -27,7 +29,9 @@ func (c *Client) pipeBalanceDelta(args json.RawMessage) {
 		panic(parseErr)
 	}
 
-	c.balanceSubscription <- balance.BalanceDelta
+	if c.balanceSubscription != nil {
+		c.balanceSubscription <- balance.BalanceDelta
+	}
 }
 
 func (c *Client) pipeMarketExchangeDelta(args json.RawMessage) {

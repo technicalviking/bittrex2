@@ -119,10 +119,17 @@ func (c *Client) setExchangeDeltaChan(market string, newChan chan socketPayloads
 
 //SubscribeToBalanceChanges allow the consuming application access to the channel used to receive balance changes.
 func (c *Client) SubscribeToBalanceChanges() chan socketPayloads.BalanceDelta {
+	if c.balanceSubscription == nil {
+		c.balanceSubscription = make(chan socketPayloads.BalanceDelta)
+	}
+
 	return c.balanceSubscription
 }
 
 //SubscribeToOrderChanges allow the consuming application access to the channel used to receive order changes.
 func (c *Client) SubscribeToOrderChanges() chan socketPayloads.OrderResponse {
+	if c.orderSubscription == nil {
+		c.orderSubscription = make(chan socketPayloads.OrderResponse)
+	}
 	return c.orderSubscription
 }
