@@ -1,3 +1,12 @@
+/*
+	As of End of March 2018, Bittrex imposed limitations on their API to 60 calls / second,
+	and started internally caching results to these calls such that AT BEST the results are only
+	3 minutes old. This means that PubMarketGetLatestTick is pretty much useless.
+
+	If you need candles, I'd recommend using the PubMarketGetTicks call once a minute until you have 'fresh' results,
+	then swapping over to the socketSubscription for exchange deltas.  --DM
+*/
+
 package bittrex
 
 import (
