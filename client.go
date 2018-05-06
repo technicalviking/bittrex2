@@ -171,3 +171,8 @@ func (c *Client) socketOnErrorMethod(err error) {
 		c.errChanMutex.Unlock()
 	}(err)
 }
+
+//SubscribeToWebsocketErrors retrieve reference to error chan for websocket
+func (c *Client) SubscribeToWebsocketErrors() chan error {
+	return c.errChan
+}
