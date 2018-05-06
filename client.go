@@ -31,6 +31,9 @@ type Client struct {
 	summaryLiteDeltaMutex         sync.RWMutex
 	summaryLiteDeltaSubscriptions map[string]chan socketPayloads.SummaryLiteDelta
 	isSubbedToSummaryLiteDelta    bool
+
+	errChanMutex sync.RWMutex
+	errChan      chan error
 }
 
 //New construct a new Client object representing an interface to the various bittrex APIs.
@@ -42,21 +45,32 @@ func New(key string, secret string) (*Client, error) {
 		summaryDeltaSubscriptions:     make(map[string]chan socketPayloads.Summary),
 		summaryLiteDeltaSubscriptions: make(map[string]chan socketPayloads.SummaryLiteDelta),
 		exchangeDeltaSubscriptions:    make(map[string]chan socketPayloads.ExchangeDelta),
+		errChan:                       make(chan error, 5),
 	}
 
-	if newClientErr := newClient.connectNewSignalClient(); newClientErr != nil {
-		return nil, newClientErr
+	return newClient, nil
+}
+
+//ConnectWebSocket provide functionality to connect to the signalr endpoint.
+func (c *Client) ConnectWebSocket() error {
+
+	if c.socketClient != nil {
+		c.socketClient.Close()
 	}
 
-	if key != "" && secret != "" {
-		if authenticateErr := newClient.authNewSignalClient(); authenticateErr != nil {
-			return nil, authenticateErr
+	if newClientErr := c.connectNewSignalClient(); newClientErr != nil {
+		return newClientErr
+	}
+
+	if c.apiKey != "" && c.apiSecret != "" {
+		if authenticateErr := c.authNewSignalClient(); authenticateErr != nil {
+			return authenticateErr
 		}
 	}
 
-	newClient.addListeners()
+	c.addListeners()
 
-	return newClient, nil
+	return nil
 }
 
 func (c *Client) connectNewSignalClient() error {
@@ -114,9 +128,7 @@ func (c *Client) authNewSignalClient() error {
 
 func (c *Client) addListeners() {
 	//@TODO generate an error channel.
-	c.socketClient.OnMessageError = func(err error) {
-		fmt.Println("ERROR OCCURRED: ", err)
-	}
+	c.socketClient.OnMessageError = c.socketOnErrorMethod
 
 	c.socketClient.OnClientMethod = c.socketOnClientMethod
 }
@@ -150,4 +162,12 @@ func (c *Client) socketOnClientMethod(hub, method string, arguments []json.RawMe
 
 	}
 
+}
+
+func (c *Client) socketOnErrorMethod(err error) {
+	go func(e error) {
+		c.errChanMutex.Lock()
+		c.errChan <- err
+		c.errChanMutex.Unlock()
+	}(err)
 }

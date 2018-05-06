@@ -207,11 +207,15 @@ func (sc *Client) dispatch(connectedChannel chan bool) {
 
 		_, data, err := sc.socket.ReadMessage()
 		if err != nil {
+			if sc.OnMessageError != nil {
+				sc.OnMessageError(fmt.Errorf("Unable to read message from socket (CLOSING CONNECTION): %s", err.Error()))
+				sc.OnMessageError(err)
+			}
 			sc.socket.Close()
 			break
 		} else if err := json.Unmarshal(data, &message); err != nil {
 			if sc.OnMessageError != nil {
-				sc.OnMessageError(err)
+				sc.OnMessageError(fmt.Errorf("Unable to unmarshal message: %s", err.Error()))
 			}
 		} else {
 			if len(message.Identifier) > 0 {
@@ -222,7 +226,7 @@ func (sc *Client) dispatch(connectedChannel chan bool) {
 					err := json.Unmarshal(curData, &hubCall)
 
 					if err != nil {
-						panic(err)
+						sc.OnMessageError(fmt.Errorf("Unable to unmarshal message data: %s", err.Error()))
 					}
 
 					if len(hubCall.HubName) > 0 && len(hubCall.Method) > 0 {
