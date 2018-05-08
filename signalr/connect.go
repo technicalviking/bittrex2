@@ -37,12 +37,10 @@ type negotiationResponse struct {
 
 //Connect create websocket connection to SignalR endpoint.
 func (sc *Client) Connect(connectURL string, hubs []string) error {
+	var err error
 
 	sc.setConnectionURL(connectURL)
 	sc.hubs = hubs
-
-	var err error
-
 	sc.state = Connecting
 
 	// Negotiate parameters.
@@ -57,7 +55,8 @@ func (sc *Client) Connect(connectURL string, hubs []string) error {
 		return err
 	}
 
-	go sc.dispatch()
+	go sc.beginDispatch()
+
 	return nil
 }
 

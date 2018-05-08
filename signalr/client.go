@@ -79,6 +79,13 @@ func (sc *Client) State() ClientState {
 	return sc.state
 }
 
+func (sc *Client) updateKeepAlive() {
+	sc.keepAliveMutex.Lock()
+	defer sc.keepAliveMutex.Unlock()
+	sc.keepAliveTime = time.Now()
+
+}
+
 //New constructor for SignalR connection client.
 func New() (*Client, error) {
 

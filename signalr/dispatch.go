@@ -19,6 +19,55 @@ type hubCallResponse struct {
 	Arguments []json.RawMessage `json:"A"`
 }
 
+func (sc *Client) beginDispatch() {
+	for {
+		sc.dispatch()
+		if err := sc.reconnectWebsocket(); err != nil {
+			sc.state = Disconnected
+			sc.outputError(err)
+			return
+		}
+	}
+}
+
+// Start dispatch loop. This function will return when error occurs. When this
+// happens, all the connections are closed and user can run Connect()
+// and Dispatch() again on the same client.
+func (sc *Client) dispatch() {
+	if sc.isDispatchRunning() {
+		return
+	}
+
+	sc.state = Connected
+	sc.setDispatchState(true)
+	defer sc.setDispatchState(false)
+
+	t := time.NewTicker(time.Second)
+	dataChan := sc.listenToWebSocket()
+
+	for {
+		select {
+		case data, ok := <-dataChan:
+			if !ok {
+				t.Stop()
+				return
+			}
+			sc.handleSocketData(data)
+		case <-t.C:
+			sc.keepAliveMutex.RLock()
+			keepAliveTime := sc.keepAliveTime
+			sc.keepAliveMutex.RUnlock()
+
+			if time.Since(keepAliveTime) > time.Duration(sc.negotiationParams.KeepAliveTimeout)*time.Second {
+				t.Stop()
+				sc.socket.Close()
+				sc.outputError(newError("keepalive timeout reached.  RECONNECTING."))
+				return
+			}
+		}
+	}
+}
+
 func (sc *Client) isDispatchRunning() bool {
 	sc.dispatchMutex.RLock()
 	defer sc.dispatchMutex.RUnlock()
@@ -39,74 +88,27 @@ func (sc *Client) listenToWebSocket() chan serverMessage {
 	go func() {
 		defer close(socketDataChan)
 		for {
-			_, data, err := sc.socket.ReadMessage()
-			if err != nil {
+			var (
+				data []byte
+				err  error
+			)
+
+			if _, data, err = sc.socket.ReadMessage(); err != nil {
 				sc.outputError(err)
 				return
 			}
 
 			var message serverMessage
-			if err := json.Unmarshal(data, &message); err != nil {
-				sc.outputError(newError("Unable to unmarshal message: %s\n", err.Error()))
+			if err = json.Unmarshal(data, &message); err != nil {
+				sc.outputError(newError("Unable to parse message: %s\n", err.Error()))
+				continue
 			}
-
-			sc.keepAliveMutex.Lock()
-			sc.keepAliveTime = time.Now()
-			sc.keepAliveMutex.Unlock()
 
 			socketDataChan <- message
 		}
 	}()
 
 	return socketDataChan
-}
-
-// Start dispatch loop. This function will return when error occurs. When this
-// happens, all the connections are closed and user can run Connect()
-// and Dispatch() again on the same client.
-func (sc *Client) dispatch() {
-
-	if sc.isDispatchRunning() {
-		return
-	}
-
-	sc.state = Connected
-	sc.setDispatchState(true)
-	t := time.NewTicker(time.Second)
-
-	defer func() {
-		sc.setDispatchState(false)
-		t.Stop()
-		if e := sc.reconnectWebsocket(); e != nil {
-			sc.state = Disconnected
-			sc.outputError(e)
-			return
-		}
-
-		go sc.dispatch()
-	}()
-
-	dataChan := sc.listenToWebSocket()
-
-	for {
-		select {
-		case data, ok := <-dataChan:
-			if !ok {
-				return
-			}
-			sc.handleSocketData(data)
-		case <-t.C:
-			sc.keepAliveMutex.RLock()
-			keepAliveTime := sc.keepAliveTime
-			sc.keepAliveMutex.RUnlock()
-
-			if time.Since(keepAliveTime) > time.Duration(sc.negotiationParams.KeepAliveTimeout)*time.Second {
-				sc.socket.Close()
-				sc.outputError(newError("keepalive timeout reached.  RECONNECTING."))
-				return
-			}
-		}
-	}
 }
 
 func (sc *Client) handleSocketData(message serverMessage) {
