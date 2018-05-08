@@ -13,8 +13,20 @@ import (
 	"github.com/technicalviking/bittrex2/cloudflare"
 )
 
+//ClientState int representing current state of the SignalR Client
+type ClientState int
+
+//SignalR Client State Values
+const (
+	Disconnected ClientState = iota
+	Connecting
+	Reconnecting
+	Connected
+)
+
 //Client object representing connection to the signalr socket api
 type Client struct {
+	state ClientState
 	//When errors happen for any reason, this callback is called.  This includes when the websocket closes remotely.
 	OnMessageError func(err error)
 	//This method is called whenever a message comes down through the websocket.
@@ -59,6 +71,11 @@ func (sc *Client) Close() {
 //SetMaxRetries - number of times the client will try to automatically reconnect.
 func (sc *Client) SetMaxRetries(retries int) {
 	sc.maxRetries = retries
+}
+
+//State get connected state.
+func (sc *Client) State() ClientState {
+	return sc.state
 }
 
 //New constructor for SignalR connection client.

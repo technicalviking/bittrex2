@@ -61,7 +61,7 @@ func (sc *Client) dispatch() {
 	if sc.isDispatchRunning() {
 		return
 	}
-
+	sc.state = Connected
 	sc.setDispatchState(true)
 
 	t := time.NewTicker(time.Second)
@@ -70,6 +70,7 @@ func (sc *Client) dispatch() {
 		sc.setDispatchState(false)
 		t.Stop()
 		if e := sc.reconnectWebsocket(); e != nil {
+			sc.state = Disconnected
 			sc.outputError(e)
 			return
 		}

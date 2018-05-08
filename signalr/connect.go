@@ -41,17 +41,19 @@ func (sc *Client) Connect(connectURL string, hubs []string) error {
 	sc.setConnectionURL(connectURL)
 	sc.hubs = hubs
 
-	var (
-		err error
-	)
+	var err error
+
+	sc.state = Connecting
 
 	// Negotiate parameters.
 	if err = sc.negotiate(); err != nil {
+		sc.state = Disconnected
 		return err
 	}
 
 	// Connect Websocket.
 	if err = sc.connectWebsocket(); err != nil {
+		sc.state = Disconnected
 		return err
 	}
 
@@ -145,8 +147,20 @@ func (sc *Client) connectWebsocket() error {
 		Jar:              sc.client.Jar,
 	}
 
-	if sc.socket, _, err = socketDialer.Dial(connectionURL.String(), sc.RequestHeader); err != nil {
-		return err
+	i := 0
+	for ; i < sc.maxRetries; i++ {
+		backoff := math.Pow(2.0, float64(i))
+		time.Sleep(time.Second * time.Duration(backoff))
+		if sc.socket, _, err = socketDialer.Dial(connectionURL.String(), sc.RequestHeader); err != nil {
+			sc.outputError(err)
+			continue
+		}
+
+		break
+	}
+
+	if i == sc.maxRetries {
+		return newError("MAX RETRIES REACHED.  ABORTING CONNECTION.")
 	}
 
 	return nil
@@ -154,6 +168,8 @@ func (sc *Client) connectWebsocket() error {
 
 func (sc *Client) reconnectWebsocket() error {
 	var err error
+
+	sc.state = Reconnecting
 
 	connectionURL := sc.getConnectionURL()
 	connectionURL.Scheme = socketScheme
