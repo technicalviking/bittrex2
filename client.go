@@ -3,7 +3,6 @@ package bittrex
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"sync"
 	"time"
 
@@ -80,9 +79,7 @@ func (c *Client) connectNewSignalClient() error {
 		return clientErr
 	}
 
-	socketURL, _ := url.Parse(websocketBaseURI)
-
-	if connectErr := client.Connect(socketURL.Scheme, socketURL.Host, []string{websocketHub}); connectErr != nil {
+	if connectErr := client.Connect(websocketBaseURI, []string{websocketHub}); connectErr != nil {
 		return fmt.Errorf("Unable to create bittrex signal client at url %s:  %+v", websocketBaseURI, connectErr)
 	}
 
