@@ -173,3 +173,8 @@ func (c *Client) socketOnErrorMethod(err error) {
 func (c *Client) SubscribeToWebsocketErrors() chan error {
 	return c.errChan
 }
+
+// GetWebSocketState passthrough of the Signalr state method.
+func (c *Client) GetWebSocketState() signalr.ClientState {
+	return c.socketClient.State()
+}
