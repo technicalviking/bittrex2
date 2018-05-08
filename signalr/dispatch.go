@@ -2,6 +2,7 @@ package signalr
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -33,20 +34,29 @@ func (sc *Client) setDispatchState(newState bool) {
 	sc.dispatchRunning = newState
 }
 
-func (sc *Client) listenToWebSocket() chan []byte {
-	socketDataChan := make(chan []byte)
+func (sc *Client) listenToWebSocket() chan serverMessage {
+	socketDataChan := make(chan serverMessage)
 
 	go func() {
 		defer close(socketDataChan)
 		for {
 			_, data, err := sc.socket.ReadMessage()
 			if err != nil {
+				fmt.Printf("what the fuck? %+v\n", err)
 				sc.outputError(err)
-				sc.socket.Close()
 				return
 			}
+
+			var message serverMessage
+			if err := json.Unmarshal(data, &message); err != nil {
+				sc.outputError(newError("Unable to unmarshal message: %s\n", err.Error()))
+			}
+
+			sc.keepAliveMutex.Lock()
 			sc.keepAliveTime = time.Now()
-			socketDataChan <- data
+			sc.keepAliveMutex.Unlock()
+
+			socketDataChan <- message
 		}
 	}()
 
@@ -61,12 +71,14 @@ func (sc *Client) dispatch() {
 	if sc.isDispatchRunning() {
 		return
 	}
+
 	sc.state = Connected
 	sc.setDispatchState(true)
-
+	fmt.Println("DISPATCH")
 	t := time.NewTicker(time.Second)
 
 	defer func() {
+		fmt.Println("RECONNECT")
 		sc.setDispatchState(false)
 		t.Stop()
 		if e := sc.reconnectWebsocket(); e != nil {
@@ -78,15 +90,21 @@ func (sc *Client) dispatch() {
 		go sc.dispatch()
 	}()
 
+	dataChan := sc.listenToWebSocket()
+
 	for {
 		select {
-		case data, ok := <-sc.listenToWebSocket():
+		case data, ok := <-dataChan:
 			if !ok {
 				return
 			}
 			sc.handleSocketData(data)
 		case <-t.C:
-			if time.Since(sc.keepAliveTime) > time.Duration(sc.negotiationParams.KeepAliveTimeout) {
+			sc.keepAliveMutex.RLock()
+			keepAliveTime := sc.keepAliveTime
+			sc.keepAliveMutex.RUnlock()
+
+			if time.Since(keepAliveTime) > time.Duration(sc.negotiationParams.KeepAliveTimeout)*time.Second {
 				sc.socket.Close()
 				sc.outputError(newError("keepalive timeout reached.  RECONNECTING."))
 				return
@@ -95,13 +113,7 @@ func (sc *Client) dispatch() {
 	}
 }
 
-func (sc *Client) handleSocketData(data []byte) {
-	var message serverMessage
-
-	if err := json.Unmarshal(data, &message); err != nil {
-		sc.outputError(newError("Unable to unmarshal message: %s", err.Error()))
-		return
-	}
+func (sc *Client) handleSocketData(message serverMessage) {
 
 	// This is a response to a hub call.
 	if len(message.Identifier) > 0 {

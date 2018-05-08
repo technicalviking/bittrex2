@@ -36,6 +36,7 @@ type Client struct {
 
 	negotiationParams negotiationResponse
 	keepAliveTime     time.Time
+	keepAliveMutex    sync.RWMutex
 
 	socket       *websocket.Conn
 	callHubMutex sync.Mutex
