@@ -2,7 +2,6 @@ package signalr
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 )
 
@@ -42,7 +41,6 @@ func (sc *Client) listenToWebSocket() chan serverMessage {
 		for {
 			_, data, err := sc.socket.ReadMessage()
 			if err != nil {
-				fmt.Printf("what the fuck? %+v\n", err)
 				sc.outputError(err)
 				return
 			}
@@ -74,11 +72,9 @@ func (sc *Client) dispatch() {
 
 	sc.state = Connected
 	sc.setDispatchState(true)
-	fmt.Println("DISPATCH")
 	t := time.NewTicker(time.Second)
 
 	defer func() {
-		fmt.Println("RECONNECT")
 		sc.setDispatchState(false)
 		t.Stop()
 		if e := sc.reconnectWebsocket(); e != nil {

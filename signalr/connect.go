@@ -50,7 +50,7 @@ func (sc *Client) Connect(connectURL string, hubs []string) error {
 		sc.state = Disconnected
 		return err
 	}
-	fmt.Printf("params %+v", sc.negotiationParams)
+
 	// Connect Websocket.
 	if err = sc.connectWebsocket(); err != nil {
 		sc.state = Disconnected
