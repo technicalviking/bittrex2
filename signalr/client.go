@@ -26,7 +26,6 @@ const (
 
 //Client object representing connection to the signalr socket api
 type Client struct {
-	state ClientState
 	//When errors happen for any reason, this callback is called.  This includes when the websocket closes remotely.
 	OnMessageError func(err error)
 	//This method is called whenever a message comes down through the websocket.
@@ -47,6 +46,10 @@ type Client struct {
 	// Futures for server call responses and a guarding mutex.
 	responseFutures map[string]chan *serverMessage
 	responseMutex   sync.RWMutex
+
+	//connected state of the signalr connection
+	state      ClientState
+	stateMutex sync.RWMutex
 
 	//keep track of last message id in case reconnect is needed.
 	lastMessageID string
@@ -76,7 +79,17 @@ func (sc *Client) SetMaxRetries(retries int) {
 
 //State get connected state.
 func (sc *Client) State() ClientState {
+	sc.stateMutex.RLock()
+	defer sc.stateMutex.RUnlock()
+
 	return sc.state
+}
+
+func (sc *Client) setState(newState ClientState) {
+	sc.stateMutex.Lock()
+	defer sc.stateMutex.Unlock()
+
+	sc.state = newState
 }
 
 func (sc *Client) updateKeepAlive() {

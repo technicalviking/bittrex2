@@ -23,7 +23,7 @@ func (sc *Client) beginDispatch() {
 	for {
 		sc.dispatch()
 		if err := sc.reconnectWebsocket(); err != nil {
-			sc.state = Disconnected
+			sc.setState(Disconnected)
 			sc.outputError(err)
 			return
 		}
@@ -38,7 +38,7 @@ func (sc *Client) dispatch() {
 		return
 	}
 
-	sc.state = Connected
+	sc.setState(Connected)
 	sc.setDispatchState(true)
 	defer sc.setDispatchState(false)
 
@@ -98,12 +98,13 @@ func (sc *Client) listenToWebSocket() chan serverMessage {
 				return
 			}
 
+			sc.updateKeepAlive()
+
 			var message serverMessage
 			if err = json.Unmarshal(data, &message); err != nil {
 				sc.outputError(newError("Unable to parse message: %s\n", err.Error()))
 				continue
 			}
-
 			socketDataChan <- message
 		}
 	}()
@@ -112,7 +113,6 @@ func (sc *Client) listenToWebSocket() chan serverMessage {
 }
 
 func (sc *Client) handleSocketData(message serverMessage) {
-
 	// This is a response to a hub call.
 	if len(message.Identifier) > 0 {
 		sc.routeResponse(&message)
@@ -129,7 +129,7 @@ func (sc *Client) handleSocketData(message serverMessage) {
 
 		// check if this is a client Hub method call from server.
 		if hubCall.HubName != "" && hubCall.Method != "" && sc.OnClientMethod != nil {
-			sc.OnClientMethod(hubCall.HubName, hubCall.Method, hubCall.Arguments)
+			go sc.OnClientMethod(hubCall.HubName, hubCall.Method, hubCall.Arguments)
 		}
 	}
 }

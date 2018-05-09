@@ -41,17 +41,17 @@ func (sc *Client) Connect(connectURL string, hubs []string) error {
 
 	sc.setConnectionURL(connectURL)
 	sc.hubs = hubs
-	sc.state = Connecting
+	sc.setState(Connecting)
 
 	// Negotiate parameters.
 	if err = sc.negotiate(); err != nil {
-		sc.state = Disconnected
+		sc.setState(Disconnected)
 		return err
 	}
 
 	// Connect Websocket.
 	if err = sc.connectWebsocket(); err != nil {
-		sc.state = Disconnected
+		sc.setState(Disconnected)
 		return err
 	}
 
@@ -168,7 +168,7 @@ func (sc *Client) connectWebsocket() error {
 func (sc *Client) reconnectWebsocket() error {
 	var err error
 
-	sc.state = Reconnecting
+	sc.setState(Reconnecting)
 
 	connectionURL := sc.getConnectionURL()
 	connectionURL.Scheme = socketScheme

@@ -84,7 +84,7 @@ func (sc *Client) createResponseFuture(identifier string) chan *serverMessage {
 func (sc *Client) routeResponse(response *serverMessage) {
 	sc.responseMutex.RLock()
 	c, ok := sc.responseFutures[response.Identifier]
-	defer sc.responseMutex.RUnlock()
+	sc.responseMutex.RUnlock()
 
 	if ok {
 		c <- response
